@@ -10,6 +10,56 @@ interventions (shuffled, zero yaw, stop, mean action) scored by standard
 segmentation metrics (mIoU, MO-mIoU). The interventions are validated in a
 synthetic environment and applied to Cityscapes and BDD100K.
 
+![Overview](assets/overview.png)
+
+*Top: the forecaster. A U-Net predicts the next semantic segmentation from four
+context segmentations and the ego action (speed, yaw rate), with a learned
+copy-last term; mid-term forecasts are rolled out autoregressively. Bottom left:
+the three action-conditioning variants. Bottom right: the test-time action
+interventions, shown as predictions of one trained FiLM model during a left turn.*
+
+## Results
+
+**Forecasting accuracy with the executed action** (mIoU / MO-mIoU in %, mean ± std
+over three seeds; models trained and evaluated on the same dataset; BDD100K is
+scored against SegFormer-B5 pseudo-labels):
+
+| Method | Cityscapes short | Cityscapes mid | BDD100K short | BDD100K mid |
+|---|---|---|---|---|
+| Copy-last | 55.77 / 52.51 | 40.82 / 32.62 | 49.06 / 38.33 | 38.20 / 26.37 |
+| Flow warping | 66.17 / 64.82 | 46.05 / 39.79 | 52.86 / 42.43 | 39.80 / 28.50 |
+| No action | 70.16±0.08 / 69.23±0.15 | 57.02±0.15 / 53.15±0.28 | 54.92±0.08 / 43.80±0.19 | 45.04±0.07 / 33.23±0.21 |
+| Concat | 71.02±0.06 / 69.81±0.12 | 59.14±0.18 / 54.60±0.48 | 54.97±0.07 / 43.85±0.13 | 45.15±0.04 / 33.14±0.08 |
+| FiLM | **71.27**±0.06 / **70.02**±0.13 | **59.47**±0.14 / **54.94**±0.26 | **55.33**±0.05 / **44.38**±0.12 | **45.61**±0.09 / **33.79**±0.25 |
+
+**Action dependence** (mid-term mIoU in % with the executed action, and its change
+when the future action is replaced at test time):
+
+| Dataset | Model | Executed | Shuffled | Zero yaw | Stop | Mean |
+|---|---|---|---|---|---|---|
+| Cityscapes | No action | 57.02 | 0.00 | 0.00 | 0.00 | 0.00 |
+| | Concat | 59.14 | −14.78 | −7.09 | −11.92 | −9.94 |
+| | FiLM | 59.47 | −23.17 | −8.46 | −17.03 | −17.08 |
+| BDD100K | No action | 45.04 | 0.00 | 0.00 | 0.00 | 0.00 |
+| | Concat | 45.15 | −4.50 | −0.19 | −2.64 | −4.49 |
+| | FiLM | 45.61 | −7.02 | −0.41 | −4.88 | −6.49 |
+
+The executed action improves mid-term mIoU by at most 2.5 points, whereas a wrong
+action lowers it by up to 23.2 points, below the model without action input.
+
+<p align="center">
+  <img src="assets/perclass_gain.png" width="45%" alt="Per-class IoU gain">
+  &nbsp;
+  <img src="assets/action_dependence.png" width="45%" alt="Action dependence">
+</p>
+
+*Left: per-class IoU change of FiLM over the no-action model on Cityscapes (mid
+term). Right: mid-term mIoU change of concat and FiLM relative to the no-action
+model under each intervention.*
+
+See the paper for the cross-platform evaluation, the synthetic validation and
+the efficiency comparison.
+
 ## Installation
 
 ```bash
@@ -99,6 +149,7 @@ wamad/
   segmenter.py           SegFormer wrapper for pseudo-labels
 scripts/                 the steps above
 tests/                   unit and end-to-end tests on synthetic data
+assets/                  figures shown in this README
 ```
 
 ## Citation
